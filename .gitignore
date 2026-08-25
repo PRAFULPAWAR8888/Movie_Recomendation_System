@@ -35,8 +35,8 @@ outputs/
 checkpoints/
 
 # Large datasets
-data/
-*.csv
+
+
 *.zip
 *.rar
 
