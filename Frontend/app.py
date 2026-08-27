@@ -1,20 +1,26 @@
-import streamlit as st
+import os
 import pickle
+
 import pandas as pd
 import requests
+import streamlit as st
 from dotenv import load_dotenv
-import os
 
+
+# ==========================================
 # Load environment variables
+# ==========================================
 load_dotenv()
 
 TMDB_API_KEY = os.getenv("TMDB_API_KEY")
 
 
+# ==========================================
 # Load movie data
+# ==========================================
 movies_dict = pickle.load(
     open(
-        r"C:\Users\pawar\OneDrive\Documents\ML Projects\Movie_Recomendation_System\Notebooks\movies_dict.pkl",
+        r"Notebooks/movies_dict.pkl",
         "rb"
     )
 )
@@ -22,25 +28,34 @@ movies_dict = pickle.load(
 movies = pd.DataFrame(movies_dict)
 
 
+# ==========================================
 # Load similarity matrix
+# ==========================================
 similarity = pickle.load(
     open(
-        r"C:\Users\pawar\OneDrive\Documents\ML Projects\Movie_Recomendation_System\Notebooks\similarity.pkl",
+        r"Notebooks/similarity.pkl",
         "rb"
     )
 )
 
 
+# ==========================================
 # Fetch movie poster from TMDB
+# ==========================================
 def fetch_poster(movie_id):
 
     url = f"https://api.themoviedb.org/3/movie/{movie_id}"
 
     params = {
-        "api_key": TMDB_API_KEY
+        "api_key": TMDB_API_KEY,
+        "language": "en-US"
     }
 
     response = requests.get(url, params=params)
+
+    # Check if API request was successful
+    if response.status_code != 200:
+        return None
 
     data = response.json()
 
@@ -52,13 +67,18 @@ def fetch_poster(movie_id):
     return None
 
 
+# ==========================================
 # Recommendation function
+# ==========================================
 def recommend(movie):
 
+    # Find index of selected movie
     movie_index = movies[movies["title"] == movie].index[0]
 
+    # Get similarity scores for selected movie
     distances = similarity[movie_index]
 
+    # Sort movies according to similarity score
     movies_list = sorted(
         list(enumerate(distances)),
         reverse=True,
@@ -68,10 +88,11 @@ def recommend(movie):
     recommended_movies = []
     recommended_posters = []
 
+    # Get top 5 recommendations
     for i in movies_list:
 
-        movie_id = movies.iloc[i[0]].movie_id
-        movie_title = movies.iloc[i[0]].title
+        movie_id = movies.iloc[i[0]]["movie_id"]
+        movie_title = movies.iloc[i[0]]["title"]
 
         poster = fetch_poster(movie_id)
 
@@ -81,17 +102,21 @@ def recommend(movie):
     return recommended_movies, recommended_posters
 
 
+# ==========================================
 # Streamlit UI
+# ==========================================
 st.title("Movie Recommender System")
 
-
 selected_movie_name = st.selectbox(
-    "Select Movies",
+    "Type or select a movie from the dropdown",
     movies["title"].values
 )
 
 
-if st.button("Recommend"):
+# ==========================================
+# Recommendation button
+# ==========================================
+if st.button("Show Recommendation"):
 
     recommendations, posters = recommend(selected_movie_name)
 
